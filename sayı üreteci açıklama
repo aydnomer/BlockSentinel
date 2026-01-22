@@ -1,0 +1,15 @@
+Bu projede, standart rastgele sayı üreteçlerinin ötesine geçerek, kriptografik olarak güvenli ve alan spesifik (domain-specific) bir algoritma tasarladım.  
+Kısaca HMAC-SHA256 algoritmasını Pi sayısının kaotik yapısıyla besleyen ve çıktıyı 'Calcium Oxalate' molekül ismiyle maskeleyerek güvenli rastgele sayılar üreten hibrit bir sistem tasarlandı.
+Kodun temel çalışma prensibi şu 4 ana ayağa dayanmaktadır:
+1.	Güvenli Temel (HMAC-SHA256): Algoritmanın motoru olarak, endüstri standardı olan HMAC-SHA256 yapısını kullandım. Bu, verdiğimiz girdilerin (seed) matematiksel olarak geri döndürülemez bir şekilde karıştırılmasını sağlıyor.
+2.	Matematiksel Sabit (Pi Sayısı): Sistemin entropi havuzunu beslemek için Pi sayısının ondalık kısmının Hexadecimal (16’lık taban) karşılığını koda gömdüm. Bu, algoritmanın  evrensel bir matematiksel sabitten beslendiğini gösteriyor.
+3.	Alan Spesifik Maskeleme (XOR Whitening): Bu algoritmayı özgün kılan en önemli kısım burası. Üretilen ham veriyi, Üroloji alanındaki en yaygın böbrek taşı olan 'CalciumOxalateMonohydrate' kelimesinin byte değerleri ile XOR işlemine tabi tuttum. Bu işlem, hem veriyi ekstra bir katmanla maskeliyor (whitening) hem de üretece projeye özgü dijital bir imza atıyor.
+4.	İleriye Dönük Gizlilik (Forward Secrecy): Her sayı üretiminden sonra, sistemin içindeki anahtar durumunu (stateKey) bir sonraki adım için güncelledim. Böylece sistemin o anki durumu ele geçirilse bile, geçmişte üretilen sayıların güvenliği tehlikeye girmez.
+
+Algoritma mantığı
+•  Başlangıç: İstenilen uzunlukta (örneğin 16 byte) bir dizi oluşturulur.
+•  Döngü: Yeterli veri üretilene kadar sistem döner.
+•  Pi Kaynağı: Her turda sayaç artar ve kodun içine gömülü Pi Sabitleri ile birleştirilir.
+•  HMAC İşlemi: Kullanıcının tohumu (seed) ve Pi sabitleri, SHA-256 algoritmasıyla karıştırılır.
+•  XOR Maskeleme : Üretilen ham veri, "CalciumOxalateMonohydrate" bayt dizisi ile XOR işlemine sokulur. Bu, veriye "Böbrek Taşı" imzasını atar.
+•  Güvenlik (Forward Secrecy): Bir sonraki tur tahmin edilemesin diye anahtar (StateKey) güncellenir ve döngü başa döner.

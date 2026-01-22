@@ -1,0 +1,112 @@
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.util.Arrays;
+
+public class PiSecureRandom {
+
+    private static final String HMAC_ALGO = "HmacSHA256";
+    private static final byte[] PI_CONSTANTS_HEX = hexStringToByteArray(
+            "243F6A8885A308D313198A2E03707344A4093822299F31D0082EFA98EC4E6C89" +
+            "452821E638D01377BE5466CF34E90C6CC0AC29B7C97C50DD3F84D5B5B5470917"
+    );
+    private static final byte[] XOR_MASK = "CalciumOxalateMonohydrate".getBytes(StandardCharsets.UTF_8);
+
+    private byte[] stateKey;
+    private long counter;
+
+    public PiSecureRandom(byte[] seed) {
+        try {
+            Mac hmac = Mac.getInstance(HMAC_ALGO);
+            SecretKeySpec secretKey = new SecretKeySpec(seed, HMAC_ALGO);
+            hmac.init(secretKey);
+            this.stateKey = hmac.doFinal(PI_CONSTANTS_HEX);
+            this.counter = 0;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public int nextInt() {
+        byte[] randomBytes = generateRandomBytes(4);
+        return ByteBuffer.wrap(randomBytes).getInt();
+    }
+
+    public int nextInt(int min, int max) {
+        if (min >= max) throw new IllegalArgumentException("Max must be greater than Min");
+        int range = max - min;
+        return min + Math.abs(nextInt() % range);
+    }
+
+    public byte[] generateRandomBytes(int length) {
+        byte[] result = new byte[length];
+        byte[] buffer;
+        int copied = 0;
+
+        try {
+            Mac hmac = Mac.getInstance(HMAC_ALGO);
+            SecretKeySpec keySpec;
+
+            while (copied < length) {
+                this.counter++;
+                keySpec = new SecretKeySpec(this.stateKey, HMAC_ALGO);
+                hmac.init(keySpec);
+
+                ByteBuffer dataBuffer = ByteBuffer.allocate(8 + PI_CONSTANTS_HEX.length);
+                dataBuffer.putLong(counter);
+                dataBuffer.put(PI_CONSTANTS_HEX);
+
+                buffer = hmac.doFinal(dataBuffer.array());
+                applyXorMask(buffer);
+
+                int toCopy = Math.min(buffer.length, length - copied);
+                System.arraycopy(buffer, 0, result, copied, toCopy);
+                copied += toCopy;
+
+                hmac.init(new SecretKeySpec(buffer, HMAC_ALGO));
+                this.stateKey = hmac.doFinal(this.stateKey);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return result;
+    }
+
+    private void applyXorMask(byte[] data) {
+        for (int i = 0; i < data.length; i++) {
+            data[i] = (byte) (data[i] ^ XOR_MASK[i % XOR_MASK.length]);
+        }
+    }
+
+    private static byte[] hexStringToByteArray(String s) {
+        int len = s.length();
+        byte[] data = new byte[len / 2];
+        for (int i = 0; i < len; i += 2) {
+            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
+                    + Character.digit(s.charAt(i + 1), 16));
+        }
+        return data;
+    }
+
+    public static void main(String[] args) {
+        SecureRandom initialEntropy = new SecureRandom();
+        byte[] seed = new byte[32];
+        initialEntropy.nextBytes(seed);
+
+        PiSecureRandom rng = new PiSecureRandom(seed);
+
+        System.out.println("Generated Random Integers:");
+        for (int i = 0; i < 5; i++) {
+            System.out.println(rng.nextInt());
+        }
+
+        System.out.println("\nGenerated Random Bytes (Hex):");
+        byte[] bytes = rng.generateRandomBytes(16);
+        for (byte b : bytes) {
+            System.out.printf("%02X", b);
+        }
+        System.out.println();
+    }
+}
